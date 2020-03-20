@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>日志</title>
+  <link rel="stylesheet" href="js/dialog/dialog.css">
+  <link rel="stylesheet" href="css/dairy.css">
+  <script src="js/vue.min.js"></script>
+  <script src="js/jquery-3.3.1.min.js"></script>
+  <script src="js/dialog/dialog.js"></script>
+  <script src="js/wangEditor/wangEditor.min.js"></script>
+  <script src="js/clock.js"></script>
+</head>
+
+<body>
+  <div class="wrap" id="app" v-clock>
+    <div class="hd">
+      <div class="hd-main">
+        <ul class="nav">
+          <li><a href="index.html"><b class="home"></b>首页</a></li>
+          <li class="sel"><a href="dairy.html"><b class="dairy"></b>日志</a></li>
+          <li><a href="album.html"><b class="album"></b>相册</a></li>
+          <!-- <li><a href="msg.html"><b class="msg"></b>留言板</a></li> -->
+        </ul>
+      </div>
+    </div>
+    <div class="main clearfix">
+      <div class="main-left">
+        <div class="main-left-hd">
+          <div class="main-left-hd-img">
+            <img src="images/SpongeBob.jpg" alt="">
+          </div>
+          <div class="main-left-hd-tit">菠萝和竹笋</div>
+          <div class="main-left-hd-sign">新年快乐！！！</div>
+        </div>
+        <div class="main-left-label">
+          <div class="main-left-label-hd">分类标签</div>
+          <div class="main-left-label-class">
+            <span v-for="item in label">{{item.name}}</span>
+          </div>
+        </div>
+        <div class="main-left-time">
+          <div class="date">
+            <div class="date-hd">
+              <div class="year">{{year}}年</div>
+              <div class="month">{{month}}月</div>
+            </div>
+            <div class="date-main">
+              <div class="day">{{day}}</div>
+            </div>
+            <div class="date-ft">
+              <div class="week">{{weekArr[week]}}</div>
+            </div>
+          </div>
+          <div class="time">
+            <canvas id="canvas" style="width: 100%; height: 100%;">当前浏览器不支持canvas</canvas>
+          </div>
+        </div>
+      </div>
+      <div class="main-right">
+        <div class="main-right-hd">
+          <div class="main-right-hd-con">日志列表</div>
+        </div>
+        <div class="con" v-show="isNull==false" style="display: none;">
+          <ul class="list">
+            <li class="clearfix" v-for="item in list">
+              <h2 class="li-hd">
+                <a :href="'dairy-detail.html?id='+item.id">{{item.title}}</a>
+              </h2>
+              <div class="txt" :id="item.id" v-html="item.content"></div>
+              <a :href="'dairy-detail.html?id='+item.id" class="btn">查看全文</a>
+              <div class="ft">
+                <span class="time">
+                  <b></b>{{item.time}}
+                </span>
+                <span class="user">
+                  <b></b>{{item.user}}
+                </span>
+                <span class="read">
+                  <b></b>{{item.read}}
+                </span>
+              </div>
+            </li>
+          </ul>
+          <div class="page">
+            <a v-show="page>1" @click="pageFun(-1)">上一页</a>
+            <a v-show="page<maxPage" @click="pageFun(1)">下一页</a>
+            <span>共{{maxPage}}页，当前第{{page}}页</span>
+          </div>
+        </div>
+        <div class="con" 
+        v-show="isNull==true"
+        style="height: 150px;background-color: #fff;text-align:center;margin-top: 1px;line-height: 150px;">
+          暂无日志
+        </div>
+        <div class="copyright">
+          Copyright ©2019 ajiuya.cn All Rights Reserved. 闽ICP备19022956号
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        label: "",
+        week: "",
+        day: "30",
+        month: "12",
+        year: "2019",
+        weekArr: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+        hours: "",
+        minutes: "",
+        seconds: "",
+        list: [],
+        page: 1,
+        maxPage: "",
+        isNull: '',
+      },
+      mounted: function() {
+        this.classifyFun();
+        this.clockFun();
+        init(280, 80, canvas);
+        this.queryFun();
+
+      },
+      methods: {
+        clockFun: function () {
+          setInterval(() => {
+            var t = new Date();
+            this.year = t.getFullYear();
+            this.month = t.getMonth() + 1;
+            this.week = t.getDay();
+            this.day = t.getDate();
+            this.hours = t.getHours();
+            if (this.hours < 10) {
+              this.hours = "0" + this.hours;
+            }
+            this.minutes = t.getMinutes();
+            if (this.minutes < 10) {
+              this.minutes = "0" + this.minutes;
+            }
+            this.seconds = t.getSeconds();
+            if (this.seconds < 10) {
+              this.seconds = "0" + this.seconds;
+            }
+          }, 100);
+        },
+        classifyFun: function () {
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/classify.php",
+            data: {},
+            success: function (data) {
+              var data = JSON.parse(data);
+              if (data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.label = Object.values(data.list);
+                // console.log(data.list);
+              }
+            },
+            error: function (data) { }
+          });
+        },
+        pageFun: function (param) {
+          if (param < 0) {
+            this.page--;
+          }
+          if (param > 0) {
+            this.page++;
+          }
+          this.queryFun();
+        },
+        queryFun: function(){
+          var _this = this;
+          $.ajax({
+            "type": "post",
+            "url": "php/dairy.php",
+            data: {
+              page: _this.page
+            },
+            success: function (data) {
+              var data = JSON.parse(data);
+              if (data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.list = data.list;
+                _this.maxPage = data.maxPage;
+                if(_this.list.length==0) {
+                  _this.isNull = true;
+                } else {
+                  _this.isNull = false;
+                }
+              }
+            },
+            error: function (data) { }
+          });
+        },
+        
+      }
+    });
+  </script>
+</body>
+
+</html>

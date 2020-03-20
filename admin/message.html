@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>留言管理</title>
+  <link rel="stylesheet" href="../js/dialog/dialog.css">
+  <link rel="stylesheet" href="css/user.css">
+  <script src="../js/vue.min.js"></script>
+  <script src="../js/jquery-3.3.1.min.js"></script>
+  <script src="../js/dialog/dialog.js"></script>
+  <script src="../js/ieJs.js"></script>
+</head>
+<script>
+  if (IEVersion() != -1) {
+    alert("不支持IE浏览器");
+    window.location.href = "index.html";
+  }
+</script>
+<body>
+  <div class="wrap" id="app">
+    <div class="header">
+      <a class="header-div">{{admin}}</a>
+      <a class="header-div" @click="logout">退出</a>
+    </div>
+    <div class="navbar">
+      <ul>
+        <li><a href="user.html">用户管理</a></li>
+        <li><a href="daily.html">日志管理</a></li>
+        <li><a href="album.html">相册管理</a></li>
+        <li class="sel"><a href="#">留言管理</a></li>
+      </ul>
+    </div>
+    
+    <div class="main">
+        <div class="con">
+          <div class="con-hd">
+            <span>留言板</span>
+          </div>
+          <div class="con-main">
+            <div class="add-btn" v-if="adminGrade==0" @click="openPop">添加</div>
+            <table class="con-list">
+              <tr class="con-list-li con-list-li-hd">
+                <th class="userRow">内容</th>
+                <th class="limitRow">用户</th>
+                <th class="editRow">修改</th>
+                <th class="delRow">删除</th>
+                <th class="limitRow">时间</th>
+              </tr>
+              <tr class="con-list-li" v-for="(item, index) in list">
+                <td class="userRow">
+                  <a class="tit" :title="item.text">
+                    {{item.text}}
+                  </a>
+                </td>
+                <td class="limitRow">
+                  <span class="time">{{item.username}}</span>
+                </td>
+                <td class="editRow">
+                  <template v-if="adminGrade==0">
+                    <span class="btn edit" @click="editPop(index)">
+                      <i></i>编辑
+                    </span>
+                  </template>
+                  <template v-if="adminGrade==1||adminGrade==2">
+                    <template v-if="item.username==admin">
+                      <span class="btn edit" @click="editPop(index)">
+                        <i></i>编辑
+                      </span>
+                    </template>
+                    <template v-if="item.username!=admin">
+                      <span class="btn edit forbid">
+                        <i></i>编辑
+                      </span>
+                    </template>
+                  </template>
+                </td>
+                <td class="delRow">
+                  <template v-if="adminGrade==0||adminGrade==1">
+                    <span class="btn edit del" @click="delFun(index)">
+                      <i></i>删除
+                    </span>
+                  </template>
+                  <template v-if="adminGrade==2">
+                    <template v-if="item.username==admin">
+                      <span class="btn edit del" @click="delFun(index)">
+                        <i></i>删除
+                      </span>
+                    </template>
+                    <template v-if="item.username!=admin">
+                      <span class="btn edit del forbid">
+                        <i></i>删除
+                      </span>
+                    </template>
+                  </template>
+                </td>
+                <td class="limitRow">
+                  <span class="time">{{item.time}}</span>
+                </td>
+              </tr>
+              
+            </table>
+            <!-- <ul class="msg-list">
+              <li v-for="(item, index) in list">
+                <a class="tit" :title="item.text">
+                  {{item.text}}
+                  <span class="time">({{item.username}})</span>
+                </a>
+                
+                <template v-if="adminGrade==0||adminGrade==1">
+                  <span class="edit del" @click="delFun(index)">
+                    <i></i>删除
+                  </span>
+                </template>
+                <template v-if="adminGrade==2">
+                  <template v-if="item.username==admin">
+                    <span class="edit del" @click="delFun(index)">
+                      <i></i>删除
+                    </span>
+                  </template>
+                  <template v-if="item.username!=admin">
+                    <span class="edit del forbid">
+                      <i></i>删除
+                    </span>
+                  </template>
+                </template>
+                <template v-if="adminGrade==0">
+                  <span class="edit" @click="editPop(index)">
+                    <i></i>编辑
+                  </span>
+                </template>
+                <template v-if="adminGrade==1||adminGrade==2">
+                  <template v-if="item.username==admin">
+                    <span class="edit" @click="editPop(index)">
+                      <i></i>编辑
+                    </span>
+                  </template>
+                  <template v-if="item.username!=admin">
+                    <span class="edit forbid">
+                      <i></i>编辑
+                    </span>
+                  </template>
+                </template>
+                
+                <span class="time">{{item.time}}</span>
+                
+              </li>
+            </ul> -->
+            <div class="con-ft">
+              <a v-show="page > 1" @click="pageFun(-1)">上一页</a>
+              <a v-show="page < maxPage" @click="pageFun(1)">下一页</a>
+              <span>共{{maxPage}}页，当前第{{page}}页</span>
+            </div>
+          </div>
+        </div>
+    </div>
+    <!-- <div class="footer"></div> -->
+    <div class="pop-msg" v-show="popStatus==true">
+      <div class="pop-main">
+        <div class="pop-main-text">
+          <label for="">简介：</label>
+          <textarea name="" id="" v-model="text" cols="30" rows="10" placeholder="请输入留言"></textarea>
+        </div>
+        <div class="pop-main-img">
+          <label for="">选择图片：</label>
+          <span class="img-btn">
+            <input type="file" name="" id="" :disabled="disabled" @change="upload">
+            <!-- 选择 -->
+            <img class="img" :src="imageUrl"  alt="">
+          </span>
+    
+        </div>
+        <div class="pop-main-ft">
+          <span @click="cancel">取消</span>
+          <span @click="submitFun">提交</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        list: [],
+        popStatus: false,
+        isEdit: false,
+        text: "",
+        imageUrl: "",
+        editId: "",
+        disabled: false,
+        page: 1,
+        maxPage: 5,
+        admin: "",
+        adminGrade: "",
+      },
+      mounted: function(){
+        this.queryFun();
+      },
+      methods: {
+        openPop: function(){
+          this.popStatus = true;
+          this.isEdit = false;
+          this.disabled = false;
+        },
+        cancel: function(){
+          this.popStatus = false;
+        },
+        editPop: function(index){
+          this.popStatus = true;
+          this.isEdit = true;
+          this.editId = this.list[index].id;
+          this.imageUrl = this.list[index].image;
+          this.text = this.list[index].text;
+
+          if(this.imageUrl == "") {
+            this.disabled = false;
+          } else {
+             this.disabled = true;
+          }
+        },
+        upload: function(e){
+          var _this = this;
+          var el = e.target;
+          var file = el.files[0];
+          var reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = function(evt){
+            _this.imageUrl = evt.target.result;
+          }
+          el.value = "";
+        },
+        submitFun: function(){
+          var _this = this;
+          if(_this.isEdit == false) {
+            // alert("添加状态");
+            if(_this.text==""){
+              // alert("内容不为空！");
+              $(document).dialog({
+                content: "内容不为空！"
+              });
+            } else {
+
+              $.ajax({
+                type: "post",
+                url: "php/message.php?act=add",
+                data: {
+                  username: "admin",
+                  text: _this.text,
+                  image: _this.imageUrl
+                },
+                success: function(data){
+                  var data = JSON.parse(data);
+                  if (data.status == 0) {
+                    // alert("连接错误");
+                    $(document).dialog({
+                      content: "连接错误"
+                    });
+                  } else if(data.fileType == 0){
+                    if (data.success == 0) {
+                      // alert("提交失败");
+                      $(document).dialog({
+                        content: "提交失败"
+                      });
+                    } else {
+                      // alert("提交成功");
+                      $(document).dialog({
+                        content: "提交成功"
+                      });
+                      // window.location.reload();
+                      _this.queryFun();
+                      _this.popStatus = false;
+                    }
+                  } else {
+                    if (data.imgType == 0) {
+                      // alert("只支持格式为pjpeg,jpeg,gif,png的图片");
+                      $(document).dialog({
+                        content: "只支持格式为pjpeg,jpeg,gif,png的图片"
+                      });
+                    } else if (data.upload == 0) {
+                      // alert("图片上传失败");
+                      $(document).dialog({
+                        content: "图片上传失败"
+                      });
+                    } else if (data.success == 0) {
+                      // alert("提交失败");
+                      $(document).dialog({
+                        content: "提交失败"
+                      });
+                    } else {
+                      // alert("提交成功");
+                      $(document).dialog({
+                        content: "提交成功"
+                      });
+                      // window.location.reload();
+                      _this.queryFun();
+                      _this.popStatus = false;
+                    }
+                  }
+                },
+                error: function(data) {}
+              });
+            }
+          } else {
+            // alert("编辑状态");
+            $.ajax({
+              type: "post",
+              url: "php/message.php?act=edit",
+              data: {
+                id: _this.editId,
+                text: _this.text,
+                image: _this.imageUrl
+              },
+              success: function(data){
+                // console.log(JSON.parse(data));
+                // console.log(data);
+                var data = JSON.parse(data);
+                if(data.status == 0){
+                  // alert("连接错误");
+                  $(document).dialog({
+                    content: "连接错误"
+                  });
+                } else if(data.fileType==0){
+                  if(data.success==0){
+                    // alert("提交失败");
+                    $(document).dialog({
+                      content: "提交失败"
+                    });
+                  } else {
+                    // alert("提交成功");
+                    $(document).dialog({
+                      content: "提交成功"
+                    });
+                    // window.location.reload();
+                    _this.queryFun();
+                    _this.popStatus = false;
+                  }
+                } else {
+                  if(data.imgType==0){
+                    // alert("只支持格式为pjpeg,jpeg,gif,png的图片");
+                    $(document).dialog({
+                      content: "只支持格式为pjpeg,jpeg,gif,png的图片"
+                    });
+                  } else if (data.upload == 0) {
+                    // alert("图片上传失败");
+                    $(document).dialog({
+                      content: "图片上传失败"
+                    });
+                  } else if (data.success == 0) {
+                    // alert("提交失败");
+                    $(document).dialog({
+                      content: "提交失败"
+                    });
+                  } else {
+                    // alert("提交成功");
+                    $(document).dialog({
+                      content: "提交成功"
+                    });
+                    // window.location.reload();
+                    _this.queryFun();
+                    _this.popStatus = false;
+                  }
+                }
+
+              },
+              error: function(data){}
+            });
+          }
+        },
+        delFun: function(index){
+          var _this = this;
+          
+          $(document).dialog({
+            type: "confirm",
+            content: "确定删除吗？",
+            onClickConfirmBtn: function(){
+              $.ajax({
+                type: "post",
+                url: "php/message.php?act=delete",
+                data: {
+                  id: _this.list[index].id
+                },
+                success: function (data) {
+                  var data = JSON.parse(data);
+                  if (data.status == 0) {
+                    // alert("连接错误");
+                    $(document).dialog({
+                      content: "连接错误"
+                    });
+                  } else if (data.success == 0) {
+                    // alert("删除失败");
+                    $(document).dialog({
+                      content: "删除失败"
+                    });
+                  } else {
+                    // alert("删除成功");
+                    $(document).dialog({
+                      content: "删除成功"
+                    });
+                    // window.location.reload();
+                    _this.queryFun();
+                  }
+                },
+                error: function (data) { }
+              });
+            }
+          });
+          
+        },
+        pageFun: function(param){
+          if(param < 0) {
+            this.page--;
+          }
+          if(param > 0) {
+            this.page++;
+          }
+          this.queryFun();
+        },
+        queryFun: function(){
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/message.php?act=query",
+            data: {
+              page: _this.page
+            },
+            success: function (data) {
+
+              var data = JSON.parse(data);
+              // console.log(data);
+              if (data.status == 0) {
+                // alert("数据连接错误");
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.list = Object.values(data.list);
+                _this.maxPage = data.maxPage;
+                _this.admin = data.username;
+                _this.adminGrade = data.grade;
+              }
+            },
+            error: function (data) { }
+          });
+        },
+        logout: function(){
+          $(document).dialog({
+            type: "confirm",
+            content: "退出当前账号？",
+            onClickConfirmBtn: function(){
+              $.ajax({
+                type: "post",
+                url: "php/login.php?statusLog=logout",
+                data: {},
+                success: function (data) {
+                  window.location.href = "index.html";
+                }
+              });
+            }
+          });
+          
+        },
+      },
+    });
+  </script>
+</body>
+</html>

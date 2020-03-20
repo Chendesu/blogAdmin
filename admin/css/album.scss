@@ -1,0 +1,254 @@
+@import "common";
+.wrap {
+  .main {
+    flex: 1 1 auto;
+    min-width: 875px;
+    height: 100%;
+    padding: 25px 25px 60px;
+    background: #efefef;
+    overflow: auto;
+    box-sizing: border-box;
+    .album {
+      padding: 15px;
+      border-radius: 5px;
+      background: #fff;
+      box-sizing: border-box;
+      .album-hd {
+        height: 42px;
+        margin: 0 10px;
+        border-bottom: 1px solid #999;
+        span {
+          display: inline-block;
+          line-height: 40px;;
+          margin: 0 15px 0 0;
+          border-bottom: 3px solid #2e7760;
+        }
+      }
+      .album-main {
+        padding: 10px;
+        .add-album {
+          display: inline-block;
+          padding: 10px 15px;
+          margin-right: 15px;
+          border-radius: 3px;
+          font-size: 14px;
+          color: #fff;
+          background-color: #2e7760;
+          cursor: pointer;
+        }
+        .album-list {
+          display: flex;
+          // justify-content: center;
+          flex-wrap: wrap;
+          li {
+            width: 25%;
+            padding: 15px;
+            box-sizing: border-box;
+          }
+          .album-li {
+            display: block;
+            // width: 25%;
+            padding: 10px;
+            // margin: 15px;
+            border: 1px solid #2e7760;
+            border-radius: 3px;
+            box-sizing: border-box;
+            .album-li-main {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              position: relative;
+              .album-li-del {
+                position: absolute;
+                top: -25px;
+                right: -25px;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                background: #2e7760 url(../../images/close.png) center center no-repeat;
+                background-size: 100% 100%;
+                // opacity: 0.8;
+                cursor: pointer;
+                &.album-li-edit {
+                  background: #2e7760 url(../images/edit_white.png) center center no-repeat;
+                  background-size: 70% 70%;
+                }
+                &.forbid {
+                  background-color: #999;
+                  cursor: not-allowed;
+                }
+              }
+              .album-li-main-img {
+                overflow: hidden;
+                height: 200px;
+                border: 1px solid #2e7760;
+                border-radius: 3px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                img{
+                  display: block;
+                  width: 100%;
+                  transition: 0.3s;
+                  -webkit-transition: 0.3s;
+                  -moz-transition: 0.3s;
+                  -ms-transition: 0.3s;
+                  -o-transition: 0.3s;
+                }
+                &:hover {
+                  img {
+                    transition: 0.3s;
+                    transform: scale(1.1);
+                    -webkit-transform: scale(1.1);
+                    -moz-transform: scale(1.1);
+                    -ms-transform: scale(1.1);
+                    -o-transform: scale(1.1);
+                    -webkit-transition: 0.3s;
+                    -moz-transition: 0.3s;
+                    -ms-transition: 0.3s;
+                    -o-transition: 0.3s;
+                  }
+                }
+              }
+              .album-li-main-tit {
+                margin: 10px 0;
+                font-size: 14px;
+                color: #333;
+                height: 40px;
+                overflow: hidden;
+              }
+              .album-li-main-time {
+                margin-top: 5px;
+                font-size: 14px;
+                color: #999;
+                text-align: right;
+              }
+            }
+          }
+        }
+      }
+      .album-ft {
+        margin-top: 15px;
+        text-align: center;
+        a {
+          display: inline-block;
+          line-height: 36px;;
+          padding: 0 15px;
+          margin: 0 15px;
+          border: 1px solid #2e7760;
+          border-radius: 3px;
+          font-size: 14px;
+          color: #2e7760;
+          background: #fff;
+          cursor: pointer;
+          &:hover {
+            color: #fff;
+            background: #2e7760;
+          }
+        }
+      }
+    }
+  }
+  .pop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    .pop-main {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 600px;
+      padding: 20px;
+      border-radius: 5px;
+      background: #fff;
+      transform: translate(-50%,-50%);
+      -webkit-transform: translate(-50%,-50%);
+      -moz-transform: translate(-50%,-50%);
+      -ms-transform: translate(-50%,-50%);
+      -o-transform: translate(-50%,-50%);
+      .pop-main-text {
+        display: flex;
+        justify-items: center;
+        label {
+          flex: 0 0 92px;
+        }
+        textarea {
+          flex: 1 1 auto;
+          height: 70px;
+          padding: 5px;
+          display: block;
+          border: 1px solid #2e7760;
+          border-radius: 4px;
+          resize: none;
+          box-sizing: border-box;
+        }
+      }
+      .pop-main-img {
+        margin-top: 15px;
+        display: flex;
+        // justify-items: center;
+        flex-wrap: wrap;
+        label {
+          flex: 0 0 92px;
+        }
+        .img-btn {
+          display: inline-block;
+          width: 120px;
+          height: 120px;
+          margin: 5px;
+          // border: 1px solid #2e7760;
+          border-radius: 4px;
+          overflow: hidden;
+          position: relative;
+          background: rgba(46, 119, 96, 0.3) url(../images/add.png) center center no-repeat;
+          background-size: 30%;
+          cursor: pointer;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          input[type=file] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+          }
+          .img {
+            width: 100%;
+          }
+        }
+      }
+      .pop-main-ft {
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        span {
+          display: inline-block;
+          width: 100px;
+          height: 32px;
+          margin: 0 15px;
+          border-radius: 5px;
+          font-size: 14px;
+          color: #fff;
+          background: #2e7760;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      }
+    }
+  }
+  
+}

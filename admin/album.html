@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>相册管理</title>
+  <link rel="stylesheet" href="../js/dialog/dialog.css">
+  <!-- <link rel="stylesheet" href="css/album.css"> -->
+  <link rel="stylesheet" href="css/user.css">
+  <script src="../js/vue.min.js"></script>
+  <script src="../js/jquery-3.3.1.min.js"></script>
+  <script src="../js/dialog/dialog.js"></script>
+  <script src="../js/ieJs.js"></script>
+</head>
+<script>
+  if (IEVersion() != -1) {
+    alert("不支持IE浏览器");
+    window.location.href = "index.html";
+  }
+</script>
+<body>
+  <div class="wrap" id="app">
+    <div class="header">
+      <a class="header-div">{{admin}}</a>
+      <a class="header-div" @click="logout">退出</a>
+    </div>
+    <div class="navbar">
+      <ul>
+        <li><a href="user.html">用户管理</a></li>
+        <li><a href="daily.html">日志管理</a></li>
+        <li class="sel"><a href="#">相册管理</a></li>
+        <li><a href="message.html">留言管理</a></li>
+      </ul>
+    </div>
+    
+    <div class="main">
+      <div class="con">
+        <div class="con-hd">
+          <span>我的相册</span>
+        </div>
+        <div class="con-main">
+          <div class="add-btn" @click="openUpload">添加</div>
+          <table class="con-list">
+            <tr class="con-list-li con-list-li-hd">
+              <th class="userRow">图片</th>
+              <th class="limitRow">用户</th>
+              <th class="editRow">修改</th>
+              <th class="delRow">删除</th>
+              <th class="limitRow">时间</th>
+              <th class="limitRow">推荐</th>
+              <th class="limitRow">分类</th>
+            </tr>
+            <tr class="con-list-li" v-for="(item, index) in list">
+              <td class="userRow">
+                <span style="padding: 10px;">
+                  <img style="width: 50px;" :src="item.url" :title="item.text">
+                </span>
+                <span class="tit" >{{item.text}}</span>
+              </td>
+              <td class="limitRow">
+                <span class="time">{{item.username}}</span>
+              </td>
+              <td class="editRow">
+                <template v-if="adminGrade==0||adminGrade==1">
+                  <span class="btn edit" @click="editUpload(index)">
+                    <i></i>编辑
+                  </span>
+                </template>
+                <template v-if="adminGrade==2">
+                  <template v-if="item.username==admin">
+                    <span class="btn edit" @click="editUpload(index)">
+                      <i></i>编辑
+                    </span>
+                  </template>
+                  <template v-if="item.username!=admin">
+                    <span class="btn edit forbid">
+                      <i></i>编辑
+                    </span>
+                  </template>
+                </template>
+                
+              </td>
+              <td class="delRow">
+                <template v-if="adminGrade==0||adminGrade==1">
+                  <span class="btn edit del" @click="deleteFun(index)">
+                    <i></i>删除
+                  </span>
+                </template>
+                <template v-if="adminGrade==2">
+                  <template v-if="item.username==admin">
+                    <span class="btn edit del" @click="deleteFun(index)">
+                      <i></i>删除
+                    </span>
+                  </template>
+                  <template v-if="item.username!=admin">
+                    <span class="btn edit del forbid">
+                      <i></i>删除
+                    </span>
+                  </template>
+                </template>
+                
+              </td>
+              <td class="limitRow">
+                <span class="time">{{item.time}}</span>
+              </td>
+              <td class="limitRow">
+                <span v-for="it in recommendList">
+                  <input type="radio" :id="'admin'+index" :name="'admin'+index" :value="it.value" v-model="item.recommend"
+                    @change="editRecommend(index)">
+                  <label :for="'admin'+index">{{it.name}}</label>
+                </span>
+              </td>
+              <td class="limitRow select">
+                <select v-model="item.classify" @change="classifyFun($event,index)">
+                  <!-- <option value="null">请选择分类</option> -->
+                  <option v-for="it in classify" :value="it.id">{{it.name}}</option>
+                </select>
+              </td>
+            </tr>
+          </table>
+          <div class="con-ft">
+            <a v-show="page>1" @click="pageFun(-1)">上一页</a>
+            <a v-show="page<maxPage" @click="pageFun(1)">下一页</a>
+            <span>共{{maxPage}}页，当前第{{page}}页</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- <div class="footer"></div> -->
+    <div class="pop-album" v-show="uploadStatus">
+      <div class="pop-main">
+        <div class="pop-main-text">
+          <label for="">简介</label>
+          <!-- <input type="text" placeholder="请输入图片的简介"> -->
+          <textarea name="" id="" cols="30" rows="10" v-model="text" placeholder="请输入图片的简介"></textarea>
+        </div>
+        <div class="pop-main-img">
+          <label for="">选择图片：</label>
+          <span class="img-btn">
+            <input type="file" name="" id="" @change="upload" :disabled="disabled">
+            <!-- 选择 -->
+            <img class="img" :src="imgUrl" alt="">
+          </span>
+          
+        </div>
+        <div class="pop-main-ft">
+          <span @click="cancel">取消</span>
+          <span @click="submit">提交</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        list: [],
+        uploadStatus: false,
+        imgUrl: "",
+        text: "",
+        delStatus: false,
+        editStatus: false,
+        disabled: false,
+        editId: "",
+        page: 1,
+        maxPage: 5,
+        admin: "",
+        adminGrade: "",
+        recommendList: [
+          {
+            value: 0,
+            name: "不推荐"
+          },
+          {
+            value: 1,
+            name: "推荐"
+          }
+        ],
+        classify: [],
+      },
+      mounted: function(){
+        this.queryFun();
+      },
+      methods: {
+        upload: function(e){
+          var _this = this;
+          var el = e.target;
+          // console.log(el.files[0]);
+          var file = el.files[0];
+          var reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = function(evt) {
+            
+            _this.imgUrl = evt.target.result;
+          }
+          el.value = "";
+        },
+        submit: function(){
+          var _this = this;
+          
+          if(_this.editStatus == false) {
+            $.ajax({
+              type: "post",
+              url: "php/album.php?act=add",
+              data: {
+                text: _this.text,
+                image: _this.imgUrl
+              },
+              success: function(data){
+               
+                var data = JSON.parse(data);
+                if(data.status == 0) {
+                  $(document).dialog({
+                    content: "连接错误！"
+                  });
+                } else if(data.fileType == 0) {
+                  $(document).dialog({
+                    content: "文件错误"
+                  });
+                } else if(data.imgType == 0) {
+                  $(document).dialog({
+                    content: "文件类型错误"
+                  });
+                } else if(data.upload == 0) {
+                  $(document).dialog({
+                    content: "图片上传失败"
+                  });
+                } else if(data.success == 0) {
+                  $(document).dialog({
+                    content: "提交失败"
+                  });
+                } else {
+                  $(document).dialog({
+                    content: "提交成功"
+                  });
+                  _this.queryFun();
+                  _this.uploadStatus = false;
+                }
+              },
+              error: function(data){}
+            });
+          } else {
+            // alert("当前为编辑状态");
+            $.ajax({
+              type: "post",
+              url: "php/album.php?act=edit",
+              data: {
+                id: _this.editId,
+                text: _this.text
+              },
+              success: function(data){
+                console.log(JSON.parse(data));
+                var data = JSON.parse(data);
+                if(data.status == 0) {
+                  $(document).dialog({
+                    content: "连接错误"
+                  });
+                } else if(data.success == 0) {
+                  $(document).dialog({
+                    content: "提交失败"
+                  });
+                } else {
+                  $(document).dialog({
+                    content: "提交成功"
+                  });
+                  _this.queryFun();
+                  _this.uploadStatus = false;
+                }
+              },
+              error: function(data){}
+            });
+          }
+        },
+        deleteFun: function(index){
+          var _this = this;
+          
+          $(document).dialog({
+            type: "confirm",
+            content: "确定删除?",
+            onClickConfirmBtn: function(){
+              $.ajax({
+                "type": "post",
+                "url": "php/album.php?act=delete",
+                data: {
+                  id: _this.list[index].id,
+                  // url: _this.list[index].url
+                },
+                success: function (data) {
+                  
+                  var data = JSON.parse(data);
+                  if (data.status == 0) {
+                    $(document).dialog({
+                      content: "连接错误"
+                    });
+                  } else if (data.success == 0) {
+                    $(document).dialog({
+                      content: "删除失败"
+                    });
+                  } else {
+                    $(document).dialog({
+                      content: "删除成功"
+                    });
+                    _this.queryFun();
+                    _this.uploadStatus = false;
+                  }
+                },
+                error: function (data) { }
+              });
+            }
+          });
+        },
+        cancel: function() {
+          this.uploadStatus = false;
+        },
+        openUpload: function() {
+          this.uploadStatus = true;
+          this.disabled = false;
+          this.imgUrl = "";
+          this.text = "";
+          this.editStatus = false;
+        },
+        deleteImg: function() {
+          this.delStatus = !this.delStatus;
+          this.editStatus = false;
+        },
+        editImg: function() {
+          this.delStatus = false;
+          this.editStatus = true;
+        },
+        editUpload: function(index){
+          this.uploadStatus = true;
+          this.imgUrl = this.list[index].url;
+          this.text = this.list[index].text;
+          this.editId = this.list[index].id;
+          this.disabled = true;
+          this.editStatus = true;
+        },
+        queryFun: function(){
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/album.php?act=query",
+            data: {
+              page: _this.page
+            },
+            success: function (data) {
+              // console.log(JSON.parse(data));
+              var data = JSON.parse(data);
+              if (data.isLogin == 0) {
+                window.location.href = "index.html";
+              } else {
+                if (data.status == 0) {
+                  $(document).dialog({
+                    content: "连接错误"
+                  });
+                } else {
+                  _this.list = Object.values(data.list);
+                  _this.maxPage = data.maxPage;
+                  _this.admin = data.username;
+                  _this.adminGrade = data.grade;
+                }
+              }
+            },
+            error: function (data) { }
+          });
+          $.ajax({
+            type: "post",
+            url: "php/classify.php",
+            data: {},
+            success: function(data) {
+              // console.log(JSON.parse(data));
+              var data = JSON.parse(data);
+              if(data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.classify = data.list;
+              }
+            }
+          })
+        },
+        pageFun: function(p){
+          if(p<0){
+            this.page--;
+          }
+          if(p>0){
+            this.page++;
+          }
+          // console.log(this.page);
+          this.queryFun();
+        },
+        editRecommend: function(index){
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/album.php?act=updateRecommend",
+            data: {
+              id: _this.list[index].id,
+              recommend: _this.list[index].recommend
+            },
+            success: function(data){
+              var data = JSON.parse(data);
+              if(data.status == 0){
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else if(data.success == 0) {
+                $(document).dialog({
+                  content: "修改失败"
+                });
+              } else {
+                $(document).dialog({
+                  content: "修改成功"
+                });
+                _this.queryFun();
+              }
+            },
+            error: function(data){}
+          });
+        },
+        classifyFun: function(e,index) {
+          
+          var _this = this;
+          
+            $.ajax({
+              type: "post",
+              url: "php/album.php?act=updateClassify",
+              data: {
+                id: _this.list[index].id,
+                classify: e.target.value
+              },
+              success: function(data) {
+                var data = JSON.parse(data);
+                console.log(data);
+                if(data.status==0){
+                  $(document).dialog({
+                    content: "连接错误"
+                  });
+                } else {
+                  if(data.success == 0) {
+                    $(document).dialog({
+                      content: "修改失败"
+                    });
+                  } else {
+                    $(document).dialog({
+                      content: "修改成功"
+                    });
+                  }
+                }
+              },
+              error: function() {}
+            });
+        },
+        logout: function(){
+          $(document).dialog({
+            type: "confirm",
+            content: "退出当前账号？",
+            onClickConfirmBtn: function(){
+              $.ajax({
+                type: "post",
+                url: "php/login.php?statusLog=logout",
+                data: {},
+                success: function (data) {
+                  window.location.href = "index.html";
+                }
+              });
+            }
+          });
+          
+        }
+      }
+    });
+  </script>
+</body>
+</html>

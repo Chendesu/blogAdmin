@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>用户管理</title>
+  <link rel="stylesheet" href="../js/dialog/dialog.css">
+  <link rel="stylesheet" href="css/user.css">
+  <script src="../js/vue.min.js"></script>
+  <script src="../js/jquery-3.3.1.min.js"></script>
+  <script src="../js/dialog/dialog.js"></script>
+  <script src="../js/ieJs.js"></script>
+</head>
+<script>
+  if (IEVersion() != -1) {
+    alert("不支持IE浏览器");
+    window.location.href = "index.html";
+  }
+</script>
+<body>
+  <div class="wrap" id="app" v-cloak>
+    <div class="header">
+      <a class="header-div">{{admin}}</a>
+      <a class="header-div" @click="logout">退出</a>
+    </div>
+    <div class="navbar">
+      <ul>
+        <li class="sel"><a href="#">用户管理</a></li>
+        <li><a href="daily.html">日志管理</a></li>
+        <li><a href="album.html">相册管理</a></li>
+        <li><a href="message.html">留言管理</a></li>
+      </ul>
+    </div>
+    
+    <div class="main">
+        <div class="con">
+          <div class="con-hd">
+            <span>用户管理</span>
+          </div>
+          <div class="con-main">
+            <div class="add-btn" v-show="adminGrade==0||adminGrade==1" @click="add"><i></i>添加</div>
+            <table class="con-list">
+              <tr class="con-list-li con-list-li-hd">
+                <th class="userRow">用户名</th>
+                <th class="editRow">修改</th>
+                <th class="delRow">删除</th>
+                <th class="limitRow">权限</th>
+              </tr>
+              <tr class="con-list-li" v-for="(item, index) in list">
+                <td class="userRow">
+                  <strong class="name">{{item.username}}</strong>
+                </td>
+                <td class="editRow">
+                  <templete v-if="adminGrade==0">
+                    <span class="btn edit" 
+                    @click="editPwd(index)">
+                      <i></i>修改密码
+                    </span>
+                  </templete>
+                  <templete v-if="adminGrade==1">
+                    <span class="btn edit" 
+                    v-if="item.grade!=0" 
+                    @click="editPwd(index)">
+                      <i></i>修改密码
+                    </span>
+                    <span class="btn edit forbid" 
+                    v-if="item.grade==0">
+                      <i></i>修改密码
+                    </span>
+                  </templete>
+                  <templete v-if="adminGrade==2">
+                    <span class="btn edit" 
+                    v-if="item.username==admin"
+                    @click="editPwd(index)">
+                      <i></i>修改密码
+                    </span>
+                    <span class="btn edit forbid" v-else>
+                      <i></i>修改密码
+                    </span>
+                  </templete>
+                  
+                </td>
+                <td class="delRow">
+                  <template v-if="adminGrade==0">
+                    <span class="btn del" 
+                    v-if="item.grade!=0" 
+                    @click="delUser(index)">
+                      <i></i>删除
+                    </span>
+                  </template>
+                  <template v-if="adminGrade==1||adminGrade==2">
+                    <span class="btn del forbid" 
+                    v-if="item.grade!=0">
+                      <i></i>删除
+                    </span>
+                  </template>
+                  
+                </td>
+                <td class="limitRow">
+                  <span v-for="it in gradeList" v-show="item.grade!=0&&it.value!=0">
+                    <input type="radio" 
+                    :id="'admin'+index" 
+                    :disabled="adminGrade!=0"
+                    :name="'admin'+index" 
+                    :value="it.value"
+                    v-model="item.grade"
+                    @change="editGrade(index)">
+                    <label :for="'admin'+index">{{it.name}}</label>
+                  </span>
+                  <span v-show="item.grade==0">默认管理员</span>
+                </td>
+              </tr>
+            </table>
+            <div class="con-ft">
+              <a v-show="page>1" @click="pageFun(-1)">上一页</a>
+              <a v-show="page<maxPage" @click="pageFun(1)">下一页</a>
+              <span>共{{maxPage}}页，当前第{{page}}页</span>
+            </div>
+          </div>
+        </div>
+    </div>
+    <!-- <div class="footer"></div> -->
+    <div class="pop" v-show="popStatus">
+      <div class="pop-main">
+        <div class="pop-main-div" v-show="showUser">
+          <label for="">用户名：</label>
+          <input type="text" v-model="username" name="username" placeholder="请输入用户名">
+        </div>
+        <div class="pop-main-div">
+          <label for="">密码：</label>
+          <input type="password" v-model="password" name="password" placeholder="请输入密码">
+        </div>
+        <div class="pop-main-div">
+          <label for="">确认密码：</label>
+          <input type="password" v-model="repassword" name="repassword" placeholder="请输入密码">
+        </div>
+        <div class="pop-main-div">
+          <button class="btn" @click="cancel">取消</button>
+          <button class="btn" @click="submit">确认</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+
+      
+    
+    new Vue({
+      el: "#app",
+      data: {
+        list: [],
+        popStatus: false,
+        username: "",
+        password: "",
+        repassword: "",
+        showUser: true,
+        idx: "",
+        updatePwd: "",
+        page: 1,
+        maxPage: 5, 
+        admin: "",
+        gradeList: [
+          {
+            value: 2,
+            name: "普通管理员"
+          },
+          {
+            value: 1,
+            name: "超级管理员"
+          },
+          {
+            value: 0,
+            name: "默认管理员"
+          }
+        ],
+        adminGrade: '',
+      },
+      mounted: function(){
+        this.queryFun();
+        
+      },
+      methods: {
+        add: function() {
+          this.popStatus = true;
+          this.showUser = true;
+        },
+        cancel: function(){
+          this.popStatus = false;
+        },
+        submit: function(){
+          var _this = this;
+          if(_this.showUser == true) {
+            _this.addUser();
+          }
+          if(_this.showUser == false) {
+            _this.updateUser();
+          }
+        },
+        addUser: function(){
+          var _this = this;
+          if(_this.password != _this.repassword){
+            $(document).dialog({
+              content: "密码不一致"
+            });
+          } else {
+            $.ajax({
+              type: "post",
+              url: "php/user.php?act=add",
+              data: {
+                username: _this.username,
+                password: _this.password,
+                repassword: _this.repassword
+              },
+              success: function(data){
+                // console.log(JSON.parse(data));
+                var data = JSON.parse(data);
+                if(data.status == 0) {
+                  $(document).dialog({
+                    content: "连接错误"
+                  });
+                } else if(data.error == 1) {
+                  $(document).dialog({
+                    content: "添加失败，用户名已存在！"
+                  });
+                } else if(data.success == 0) {
+                  $(document).dialog({
+                    content: "添加失败，请稍后重试！"
+                  });
+                } else {
+                  $(document).dialog({
+                    content: "添加成功"
+                  });
+                  _this.queryFun();
+                  _this.popStatus = false;
+
+                }
+              },
+              error: function(){
+                
+              }
+            });
+          }
+        },
+        delUser: function(index){
+          var _this = this;
+          // console.log(_this.list[index].id);
+          $(document).dialog({
+            type: "confirm",
+            content: "退出当前账号？",
+            onClickConfirmBtn: function (){
+              $.ajax({
+                type: "post",
+                url: "php/user.php?act=delete",
+                data: {
+                  id: _this.list[index].id
+                },
+                success: function (data) {
+                  // console.log(JSON.parse(data));
+                  var data = JSON.parse(data);
+                  if (data.status == 0) {
+                    $(document).dialog({
+                      content: "连接错误"
+                    });
+                  } else if (data.success == 0) {
+                    $(document).dialog({
+                      content: "删除失败！"
+                    });
+                  } else {
+                    $(document).dialog({
+                      content: "删除成功！"
+                    });
+                    _this.queryFun();
+                  }
+
+                },
+                error: function (data) {}
+              });
+            }
+          });
+          
+        },
+        editPwd: function(index){
+          this.idx = index;
+          this.showUser = false;
+          this.popStatus = true;
+          this.updatePwd = this.list[index].id;
+        },
+        updateUser: function() {
+          var _this = this;
+          if(_this.password != _this.repassword) {
+            $(document).dialog({
+              content: "密码不一致！"
+            });
+            _this.repassword = "";
+          } else {
+            $.ajax({
+              type: "post",
+              url: "php/user.php?act=update",
+              data: {
+                id: _this.updatePwd,
+                password: _this.password
+              },
+              success: function(data){
+                // console.log(JSON.parse(data));
+                var data = JSON.parse(data);
+                if(data.status == 0) {
+                  $(document).dialog({
+                    content: "连接错误"
+                  });
+                } else if(data.success == 0) {
+                  $(document).dialog({
+                    content: "修改失败，请稍后重试！"
+                  });
+                } else {
+                  $(document).dialog({
+                    content: "修改成功"
+                  });
+                  _this.queryFun();
+                  _this.popStatus = false;
+                }
+              },
+              error: function(data) { }
+            });
+          }
+        },
+        pageFun: function(param){
+          if(param<0){
+            this.page--;
+          }
+          if(param>0){
+            this.page++;
+          }
+          // console.log(this.page);
+          this.queryFun();
+        },
+        queryFun: function(){
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/user.php?act=query",
+            data: {
+              page: _this.page
+            },
+            success: function(data){
+              var data = JSON.parse(data);
+              // console.log(data);
+              if(data.isLogin == 0) {
+                window.location.href="index.html";
+              } else {
+                if (data.status == 0) {
+                  $(document).dialog({
+                    content: "连接错误"
+                  });
+                } else {
+                  // console.log(Object.values(data.list)[0]);
+                  _this.list = Object.values(data.list)[0];
+                  _this.maxPage = data.maxPage;
+                  _this.admin = data.username;
+                  _this.adminGrade = data.grade;
+
+                }
+              }
+            },
+            error: function(data){}
+          });
+        },
+        editGrade: function(index){
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/user.php?act=updateGrade",
+            data: {
+              id: _this.list[index].id,
+              grade: _this.list[index].grade
+            },
+            success: function(data){
+              var data = JSON.parse(data);
+              if (data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else if (data.success == 0) {
+                $(document).dialog({
+                  content: "修改失败"
+                });
+              } else {
+                $(document).dialog({
+                  content: "修改成功"
+                });
+                _this.queryFun();
+              }
+            },
+            error: function(data){}
+          });
+        },
+        logout: function(){
+          $(document).dialog({
+            type: "confirm",
+            content: "退出当前账号？",
+            onClickConfirmBtn: function() {
+              $.ajax({
+                type: "post",
+                url: "php/login.php?statusLog=logout",
+                data: {},
+                success: function (data) {
+                  window.location.href = "index.html";
+                }
+              });
+            }
+          });
+        },
+        closePopTip: function(){
+          window.location.href = "index.html";
+        },
+        
+
+      },
+    });
+  </script>
+</body>
+</html>

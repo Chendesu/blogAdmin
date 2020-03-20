@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>留言</title>
+  <link rel="stylesheet" href="js/dialog/dialog.css">
+  <link rel="stylesheet" href="css/msg.css">
+  <script src="js/vue.min.js"></script>
+  <script src="js/jquery-3.3.1.min.js"></script>
+  <script src="js/dialog/dialog.js"></script>
+  <script src="js/clock.js"></script>
+</head>
+
+<body>
+  <div class="wrap" id="app" v-cloak>
+    <div class="hd">
+      <div class="hd-main">
+        <ul class="nav">
+          <li><a href="index.html"><b class="home"></b>首页</a></li>
+          <li><a href="dairy.html"><b class="dairy"></b>日志</a></li>
+          <li><a href="album.html"><b class="album"></b>相册</a></li>
+          <li class="sel"><a href=""><b class="msg"></b>留言板</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="main clearfix">
+      <div class="main-left">
+        <div class="main-left-hd">
+          <div class="main-left-hd-img">
+            <img src="images/SpongeBob.jpg" alt="">
+          </div>
+          <div class="main-left-hd-tit">菠萝和竹笋</div>
+          <div class="main-left-hd-sign">新年快乐！！！</div>
+        </div>
+        <div class="main-left-label">
+          <div class="main-left-label-hd">分类标签</div>
+          <div class="main-left-label-class">
+            <span v-for="item in label">{{item.name}}</span>
+          </div>
+        </div>
+        <div class="main-left-time">
+          <div class="date">
+            <div class="date-hd">
+              <div class="year">{{year}}年</div>
+              <div class="month">{{month}}月</div>
+            </div>
+            <div class="date-main">
+              <div class="day">{{day}}</div>
+            </div>
+            <div class="date-ft">
+              <div class="week">{{weekArr[week]}}</div>
+            </div>
+          </div>
+          <div class="time">
+            <canvas id="canvas" style="width: 100%; height: 100%;">当前浏览器不支持canvas</canvas>
+          </div>
+        </div>
+      </div>
+      <div class="main-right">
+        <div class="msg-form" class="clearfix">
+          <div>
+            <textarea id="" cols="30" rows="10" name="content" v-model="content"></textarea>
+          </div>
+          <div>
+            <div class="pic-btn">
+              <span> 图片</span>
+              <i v-show="choose==true">{{fileName}}</i>
+              <div class="pic-div">
+                <span>
+                  <input type="file" name="myFile" id="upload" @change="chooseImage" accept="image/gif, image/jpeg, image/png">
+                  <!-- <img src="./images/loading.gif" alt=""> -->
+                  <img :src="imgData">
+                </span>
+              </div>
+            </div>
+            <span @click="submitFun" class="submit">发表</span>
+          </div>
+        </div>
+        <div class="msg" v-for="(item,index) in list">
+          <div class="msg-user">
+            <strong>{{item.username}}</strong>
+            <!-- <span v-if="item.username==username"> -->
+              <!-- <i>编辑</i> -->
+              <!-- <i @click="delectMsg(index)">删除</i> -->
+            <!-- </span> -->
+          </div>
+          <div class="msg-time">{{item.time}}</div>
+          <div class="msg-txt">
+            {{item.text}}
+          </div>
+          <div class="msg-img" v-if="item.image!=''">
+            <ul class="clearfix">
+              <li>
+                <div class="msg-img-con">
+                  <img :src="item.image" alt="">
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="page">
+          <a v-show="page>1" @click="pageFun(-1)">上一页</a>
+          <a v-show="page<maxPage" @click="pageFun(1)">下一页</a>
+          <span>共{{maxPage}}页，当前第{{page}}页</span>
+        </div>
+        <div class="copyright">
+          Copyright ©2019 ajiuya.cn All Rights Reserved. 闽ICP备19022956号
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        content: '',
+        choose: false,
+        fileName: '未选择',
+        imgData: '',
+        list: [],
+        label: "",
+        week: "",
+        day: "30",
+        month: "12",
+        year: "2019",
+        weekArr: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+        hours: "",
+        minutes: "",
+        seconds: "",
+        page: 1,
+        maxPage: 5,
+        // msgImg: '',
+      },
+      mounted: function() {
+        this.classifyFun();
+        this.clockFun();
+        this.queryFun();
+        init(280, 80, canvas);
+
+        
+      },
+      methods: {
+        clockFun: function () {
+          setInterval(() => {
+            var t = new Date();
+            this.year = t.getFullYear();
+            this.month = t.getMonth() + 1;
+            this.week = t.getDay();
+            this.day = t.getDate();
+            this.hours = t.getHours();
+            if (this.hours < 10) {
+              this.hours = "0" + this.hours;
+            }
+            this.minutes = t.getMinutes();
+            if (this.minutes < 10) {
+              this.minutes = "0" + this.minutes;
+            }
+            this.seconds = t.getSeconds();
+            if (this.seconds < 10) {
+              this.seconds = "0" + this.seconds;
+            }
+          }, 100);
+        },
+        classifyFun: function () {
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/classify.php",
+            data: {},
+            success: function (data) {
+              // console.log(JSON.parse(data));
+              var data = JSON.parse(data);
+              if (data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.label = Object.values(data.list);
+              }
+            },
+            error: function (data) { }
+          });
+        },
+        chooseImage: function(e) {
+          this.choose = true;
+          var _this = this;
+          var el = e.target;
+          var str = $(el).val();
+
+          var reader = new FileReader();
+          reader.readAsDataURL(el.files[0]);
+          reader.onload = function(evt) {
+            // console.log(evt.target.result);
+            _this.imgData = evt.target.result;
+          }
+          if ($(el).val() == '') {
+            _this.fileName = '未选择';
+          } else {
+            var arr = str.split('\\');
+            var len = arr.length;
+            _this.fileName = arr[len - 1];
+          }
+        },
+        queryFun: function(){
+          var _this = this;
+          $.ajax({
+            type: 'post',
+            url: 'php/msg.php',
+            data: {
+              page: _this.page
+            },
+            success: function (data) {
+              // console.log(data);
+              var data = JSON.parse(data);
+              if(data.status == 0){
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.list = data.list;
+                _this.maxPage = data.maxPage;
+              }
+            },
+            error: function (res) { }
+          });
+        },
+        pageFun: function (p) {
+          if (p < 0) {
+            this.page--;
+          }
+          if (p > 0) {
+            this.page++;
+          }
+          this.queryFun();
+          // console.log(this.page);
+        },
+        submitFun: function(){
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/msg-add.php",
+            data: {
+              content: _this.content,
+              image: _this.imgData
+            },
+            success: function(data){
+              var data = JSON.parse(data);
+              if(data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误！"
+                });
+              } else if(data.fileType == 0) {
+                $(document).dialog({
+                  content: "文件错误"
+                });
+              } else if(data.imgType == 0) {
+                $(document).dialog({
+                  content: "文件类型错误"
+                });
+              } else if(data.upload == 0) {
+                $(document).dialog({
+                  content: "图片上传失败"
+                });
+              } else if(data.success == 0) {
+                $(document).dialog({
+                  content: "提交失败"
+                });
+              } else {
+                $(document).dialog({
+                  content: "提交成功"
+                });
+                _this.queryFun();
+              }
+            },
+            error: function(data){
+
+            }
+          });
+
+        },
+        // delectMsg: function(index) {
+        //   var id = this.list[index].id;
+        //   var url = this.list[index].image;
+        //   $(document).dialog({
+        //     type: 'confirm',
+        //     content: "确认删除图片？",
+        //     onClickConfirmBtn: function() {
+        //       $.ajax({
+        //         type: 'POST',
+        //         url: 'php/delIndex.php',
+        //         data: {
+        //           'id': id,
+        //           'url': url
+        //         },
+        //         success: function(res) {
+        //           var status = JSON.parse(res);
+        //           $(document).dialog({
+        //             titleShow: false,
+        //             content: status.status,
+        //             onClickConfirmBtn: function() {
+        //               location.reload();
+        //             }
+        //           });
+        //           // console.log(res);
+        //         },
+        //         error: function(data) {},
+        //       });
+
+        //     },
+        //   });
+        // },
+      },
+    });
+  </script>
+</body>
+
+</html>

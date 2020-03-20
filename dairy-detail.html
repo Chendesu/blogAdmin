@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>博客日志</title>
+  <link rel="stylesheet" href="js/dialog/dialog.css">
+  <link rel="stylesheet" href="css/dairy-detail.css">
+  <script src="js/vue.min.js"></script>
+  <script src="js/jquery-3.3.1.min.js"></script>
+  <script src="js/dialog/dialog.js"></script>
+  <script src="js/clock.js"></script>
+</head>
+
+<body>
+  <div class="wrap" id="app" v-clock>
+    <div class="hd">
+      <div class="hd-main">
+        <ul class="nav">
+          <li><a href="index.html"><b class="home"></b>首页</a></li>
+          <li class="sel"><a href="dairy.html"><b class="dairy"></b>日志</a></li>
+          <li><a href="album.html"><b class="album"></b>相册</a></li>
+          <!-- <li><a href="msg.html"><b class="msg"></b>留言板</a></li> -->
+        </ul>
+      </div>
+    </div>
+    <div class="main clearfix">
+      <div class="main-left">
+        <div class="main-left-hd">
+          <div class="main-left-hd-img">
+            <img src="images/SpongeBob.jpg" alt="">
+          </div>
+          <div class="main-left-hd-tit">菠萝和竹笋</div>
+          <div class="main-left-hd-sign">新年快乐！！！</div>
+        </div>
+        <div class="main-left-label">
+          <div class="main-left-label-hd">分类标签</div>
+          <div class="main-left-label-class">
+            <span v-for="item in label">{{item.name}}</span>
+          </div>
+        </div>
+        <div class="main-left-time">
+          <div class="date">
+            <div class="date-hd">
+              <div class="year">{{year}}年</div>
+              <div class="month">{{month}}月</div>
+            </div>
+            <div class="date-main">
+              <div class="day">{{day}}</div>
+            </div>
+            <div class="date-ft">
+              <div class="week">{{weekArr[week]}}</div>
+            </div>
+          </div>
+          <div class="time">
+            <canvas id="canvas" style="width: 100%; height: 100%;">当前浏览器不支持canvas</canvas>
+          </div>
+        </div>
+      </div>
+      <div class="main-right">
+        <div class="main-right-hd">
+          <a href="dairy.html" class="main-right-hd-con">日志列表</a>
+        </div>
+        <div class="main-right-art">
+          <div class="tit">{{dairy.title}}</div>
+          <div class="tit-small">
+            <span class="user"><b></b>{{dairy.username}}</span>
+            <span class="time"><b></b>{{dairy.time}}</span>
+            <span class="read"><b></b>{{dairy.read}}</span>
+          </div>
+          <div class="txt" v-html="dairy.content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        label: "",
+        week: "",
+        day: "30",
+        month: "12",
+        year: "2019",
+        weekArr: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+        hours: "",
+        minutes: "",
+        seconds: "",
+        dairy: "",
+      },
+      mounted: function() {
+        this.classifyFun();
+        this.clockFun();
+        init(280, 80, canvas);
+        var _this = this;
+        var url = window.location.href;
+        var index = url.lastIndexOf("id");
+        var id = url.slice(index + 3);
+        // console.log(id);
+        $.ajax({
+          type: "post",
+          url: "php/doDairyDetail.php",
+          data: {
+            "id": id
+          },
+          success: function(data) {
+            console.log(JSON.parse(data));
+            _this.dairy = JSON.parse(data);
+          },
+          error: function(error) {
+            console.log(error);
+          }
+        });
+
+
+      },
+      methods: {
+        clockFun: function () {
+          setInterval(() => {
+            var t = new Date();
+            this.year = t.getFullYear();
+            this.month = t.getMonth() + 1;
+            this.week = t.getDay();
+            this.day = t.getDate();
+            this.hours = t.getHours();
+            if (this.hours < 10) {
+              this.hours = "0" + this.hours;
+            }
+            this.minutes = t.getMinutes();
+            if (this.minutes < 10) {
+              this.minutes = "0" + this.minutes;
+            }
+            this.seconds = t.getSeconds();
+            if (this.seconds < 10) {
+              this.seconds = "0" + this.seconds;
+            }
+          }, 100);
+        },
+        classifyFun: function () {
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/classify.php",
+            data: {},
+            success: function (data) {
+              console.log(JSON.parse(data));
+              var data = JSON.parse(data);
+              if (data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.label = Object.values(data.list);
+                console.log(data.list);
+              }
+            },
+            error: function (data) { }
+          });
+        },
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=相册, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>相册</title>
+  <link rel="stylesheet" href="js/dialog/dialog.css">
+  <link rel="stylesheet" href="js/swiper/css/swiper.min.css">
+  <link rel="stylesheet" href="css/album.css">
+  <script src="js/vue.min.js"></script>
+  <script src="js/jquery-3.3.1.min.js"></script>
+  <script src="js/dialog/dialog.js"></script>
+  <script src="js/swiper/js/swiper.min.js"></script>
+  <script src="js/clock.js"></script>
+</head>
+
+<body>
+  <div class="wrap" id="app" v-clock>
+    <div class="hd">
+      <div class="hd-main">
+        <ul class="nav">
+          <li><a href="index.html"><b class="home"></b>首页</a></li>
+          <li><a href="dairy.html"><b class="dairy"></b>日志</a></li>
+          <li class="sel"><a href="album.html"><b class="album"></b>相册</a></li>
+          <!-- <li><a href="msg.html"><b class="msg"></b>留言板</a></li> -->
+        </ul>
+      </div>
+    </div>
+    <div class="main clearfix">
+      <div class="main-left">
+        <div class="main-left-hd">
+          <div class="main-left-hd-img">
+            <img src="images/SpongeBob.jpg" alt="">
+          </div>
+          <div class="main-left-hd-tit">菠萝和竹笋</div>
+          <div class="main-left-hd-sign">新年快乐！！！</div>
+        </div>
+        <div class="main-left-label">
+          <div class="main-left-label-hd">分类标签</div>
+          <div class="main-left-label-class">
+            <span v-for="item in label">{{item.name}}</span>
+          </div>
+        </div>
+        <div class="main-left-time">
+          <div class="date">
+            <div class="date-hd">
+              <div class="year">{{year}}年</div>
+              <div class="month">{{month}}月</div>
+            </div>
+            <div class="date-main">
+              <div class="day">{{day}}</div>
+            </div>
+            <div class="date-ft">
+              <div class="week">{{weekArr[week]}}</div>
+            </div>
+          </div>
+          <div class="time">
+            <canvas id="canvas" style="width: 100%; height: 100%;">当前浏览器不支持canvas</canvas>
+          </div>
+        </div>
+      </div>
+      <div class="main-right">
+        <div class="main-right-hd">
+          <div class="main-right-hd-con">相册</div>
+        </div>
+        <div class="masonry">
+          <div class="item" v-for="(item,index) in list" @click="popImg(index)">
+            <div class="item-outer">
+              <div class="item-div">
+                <img class="lazy" :src="item.url" alt="">
+              </div>
+              <div class="item-ft">
+                <strong>{{item.text}}</strong>
+                <span>
+                  {{item.username}}
+                </span>
+                <span>
+                  <i></i>
+                  {{item.time}}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="loading" v-show="imgDiv">
+          <img src="./images/loading.gif" alt="">
+        </div>
+        <div class="page">
+          <a v-show="page>1" @click="pageFun(-1)">上一页</a>
+          <a v-show="page<maxPage" @click="pageFun(1)">下一页</a>
+          <span>共{{maxPage}}页，当前第{{page}}页</span>
+        </div>
+        <div class="copyright">
+          Copyright ©2019 ajiuya.cn All Rights Reserved. 闽ICP备19022956号
+        </div>
+      </div>
+    </div>
+    <div class="pop-img" v-show="popImgStatus">
+      <div class="pop-img-close" @click="popImgClose"></div>
+      <div class="swiper-container">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide" v-for="(item,index) in list">
+            <div class="img">
+              <img :src="item.url" alt="">
+            </div>
+            <div class="txt">
+              <div>{{item.text}}</div>
+              <div>{{item.username}}</div>
+              <div>{{item.time}}</div>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-prev swiper-button-white"></div>
+        <div class="swiper-button-next swiper-button-white"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+       
+        list: [],
+        imgName: '',
+        pop: false,
+        popImgStatus: false,
+        label: "",
+        week: "",
+        day: "30",
+        month: "12",
+        year: "2019",
+        weekArr: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+        hours: "",
+        minutes: "",
+        seconds: "",
+        page: 1,
+        maxPage: 5,
+        imgDiv: true
+      },
+      mounted: function() {
+        this.classifyFun();
+        this.clockFun();
+        init(280, 80, canvas);
+        this.queryFun();
+        var _this = this;
+        window.onload = function(){
+          _this.waterFall();
+        }
+
+      },
+      methods: {
+        clockFun: function () {
+          setInterval(() => {
+            var t = new Date();
+            this.year = t.getFullYear();
+            this.month = t.getMonth() + 1;
+            this.week = t.getDay();
+            this.day = t.getDate();
+            this.hours = t.getHours();
+            if (this.hours < 10) {
+              this.hours = "0" + this.hours;
+            }
+            this.minutes = t.getMinutes();
+            if (this.minutes < 10) {
+              this.minutes = "0" + this.minutes;
+            }
+            this.seconds = t.getSeconds();
+            if (this.seconds < 10) {
+              this.seconds = "0" + this.seconds;
+            }
+          }, 100);
+        },
+        classifyFun: function () {
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/classify.php",
+            data: {},
+            success: function (data) {
+              // console.log(JSON.parse(data));
+              var data = JSON.parse(data);
+              if (data.status == 0) {
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.label = Object.values(data.list);
+              }
+            },
+            error: function (data) { }
+          });
+        },
+        pageFun: function (param) {
+          if (param < 0) {
+            this.page--;
+          }
+          if (param > 0) {
+            this.page++;
+          }
+          this.queryFun();
+        },
+        queryFun: function(){
+          var _this = this;
+          $.ajax({
+            type: "post",
+            url: "php/album.php",
+            data: {
+              page: _this.page
+            },
+            success: function (data) {
+              // console.log(JSON.parse(data));
+              var data = JSON.parse(data);
+              if(data.status ==0){
+                $(document).dialog({
+                  content: "连接错误"
+                });
+              } else {
+                _this.list = data.list;
+                _this.maxPage = data.maxPage;
+                var img = [];
+                var flag = 0;
+                var len = _this.list.length;
+                for (var i = 0; i < len; i++) {
+                  img[i] = new Image();
+                  img[i].src = _this.list[i].url;
+                  img[i].onload = function () {
+                    flag++;
+                    if (flag == len) {
+                      setTimeout(function(){
+                        _this.waterFall();
+                        _this.imgDiv = false;
+                      }, 500)
+                    } else {
+                      _this.imgDiv = true;
+                    }
+                  }
+                }
+
+              }
+            },
+            error: function () { }
+          });
+        },
+        waterFall: function() {
+          var _this = this;
+          // var pageWidth = document.body.clientWidth;
+          var pageWidth = $(".masonry").width();
+          var columns = 3;
+          var itemWidth = parseInt(pageWidth / columns);
+          $(".item").css({
+            "width": itemWidth + "px",
+            "padding": "5px",
+            "box-sizing": "border-box"
+          });
+          var arr = [];
+          $(".masonry .item").each(function(i) {
+            var width = $(this).width();
+            var height = $(this).height();
+            var bi = itemWidth / width;
+            var itemHeight = parseInt(bi * height);
+            if (i < columns) {
+              $(this).css({
+                "top": 0,
+                "left": itemWidth * i
+              });
+              arr.push(itemHeight);
+
+            } else {
+              var minHeight = arr[0];
+              var index = 0;
+              for (var j = 0; j < arr.length; j++) {
+                if (minHeight > arr[j]) {
+                  minHeight = arr[j];
+                  index = j;
+                }
+              }
+              $(this).css({
+                "top": arr[index],
+                "left": $(".masonry .item").eq(index).css("left")
+              });
+              arr[index] = arr[index] + itemHeight;
+            }
+
+          });
+          var el = $(".masonry .item").eq(_this.list.length - 1);
+          // console.log(el[0].offsetTop);
+          // console.log(el.height());
+          // $(".masonry").height($(document).height() - 64);
+          $(".masonry").height(el[0].offsetTop + el.height());
+        },
+        open: function() {
+          this.pop = true;
+        },
+        close: function() {
+          this.pop = false;
+        },
+        popImg: function(index) {
+          this.popImgStatus = true;
+          var swiper = new Swiper('.swiper-container', {
+            centeredSlides: true,
+            loop: true,
+            initialSlide: index,
+            pagination: {
+              el: ".swiper-pagination",
+              type: "fraction"
+            },
+            navigation: {
+              nextEl: '.swiper-button-next',
+              prevEl: '.swiper-button-prev',
+            },
+            observer: true,
+            observeParents: true,
+          });
+
+        },
+        popImgClose: function() {
+          this.popImgStatus = false;
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>
